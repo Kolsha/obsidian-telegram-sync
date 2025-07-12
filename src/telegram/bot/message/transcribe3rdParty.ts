@@ -6,6 +6,7 @@ import { spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import { join, dirname } from 'path';
+import { sendLongMessage } from "../../../utils/messageUtils";
 
 const readFileAsync = promisify(fs.readFile);
 const unlinkAsync = promisify(fs.unlink);
@@ -72,19 +73,39 @@ async function processTranscriptionCommand(filepath: string, vaultRoot: string, 
     });
 }
 
+/**
+ * Sends transcription as a reply to the original message, handling long transcriptions by splitting into chunks
+ */
+async function sendTranscriptionReply(
+    plugin: TelegramSyncPlugin,
+    msg: TelegramBot.Message,
+    transcription: string
+): Promise<void> {
+    if (!plugin.settings.transcription.replyWithTranscription || !plugin.bot) {
+        return;
+    }
+
+    try {
+        await sendLongMessage(plugin.bot, msg.chat.id, transcription, {
+            reply_to_message_id: msg.message_id
+        });
+    } catch (error) {
+        console.error('Failed to reply with transcription:', error);
+    }
+}
+
 export async function transcribeFile(
     filePath: string,
     plugin: TelegramSyncPlugin,
     msg: TelegramBot.Message
 ): Promise<string> {
-    // Check if transcription is enabled
     if (!plugin.settings.transcription.enabled) {
         return '';
     }
 
-    // Check if it's an audio or voice message
     const { fileType } = getFileObject(msg);
-    if (fileType != 'audio' && fileType != 'voice') {
+    const supportedFileTypes = ['audio', 'voice', 'video', 'video_note'];
+    if (!supportedFileTypes.includes(fileType)) {
         return '';
     }
 
@@ -99,16 +120,7 @@ export async function transcribeFile(
             return '';
         }
         
-        // Reply with transcription if enabled
-        if (plugin.settings.transcription.replyWithTranscription && plugin.bot) {
-            try {
-                await plugin.bot.sendMessage(msg.chat.id, transcription, {
-                    reply_to_message_id: msg.message_id
-                });
-            } catch (error) {
-                console.error('Failed to reply with transcription:', error);
-            }
-        }
+        await sendTranscriptionReply(plugin, msg, transcription);
         
         return plugin.settings.transcription.template.replace('{text}', transcription);
     } catch (error) {
