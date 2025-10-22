@@ -25,7 +25,7 @@ export default class ConnectionStatusIndicator {
 	private openSettings() {
 		const setting = (this.plugin.app as any).setting;
 		setting.open();
-		setting.openTabById('telegram-sync');
+		setting.openTabById(this.plugin.manifest.id);
 	}
 
 	private create() {

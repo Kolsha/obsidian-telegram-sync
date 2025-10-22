@@ -18,8 +18,8 @@ async function processTranscriptionCommand(filepath: string, vaultRoot: string, 
     
     // Prepare command by replacing placeholders
     const cmd = plugin.settings.transcription.command
-        .replace('{input}', fullPath)
-        .replace('{output}', txtPath);
+        .replace('{{input}}', fullPath)
+        .replace('{{output}}', txtPath);
 
     // Prepare environment with custom PATH
     const env = {

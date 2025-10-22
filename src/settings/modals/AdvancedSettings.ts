@@ -117,11 +117,11 @@ export class AdvancedSettingsModal extends Modal {
 		new Setting(this.advancedSettingsDiv)
 			.setName("Command line")
 			.setDesc(
-				"The command to execute for transcription. Use {input} and {output} as placeholders for input and output files"
+				"The command to execute for transcription. Use {{input}} and {{output}} as placeholders for input and output files"
 			)
 			.addTextArea((text) => {
 				text
-					.setPlaceholder("e.g. whisper {input} --output_dir {output}")
+					.setPlaceholder("e.g. whisper {{input}} --output_dir {{output}}")
 					.setValue(this.plugin.settings.transcription.command)
 					.onChange(async (value: string) => {
 						this.plugin.settings.transcription.command = value;
