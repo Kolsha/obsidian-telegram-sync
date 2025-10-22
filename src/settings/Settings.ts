@@ -46,7 +46,6 @@ export interface TranscriptionSettings {
 	path: string;
 	template: string;
 	replyWithTranscription: boolean;
-	chunkDuration: number;
 }
 
 export interface RefreshValues {
@@ -92,8 +91,7 @@ export const DEFAULT_SETTINGS: TelegramSyncSettings = {
 		command: "",
 		path: "",
 		template: "Transcription:\n{text}",
-		replyWithTranscription: false,
-		chunkDuration: 300,
+		replyWithTranscription: false
 	},
 	allowedChats: [""],
 	mainDeviceId: "",

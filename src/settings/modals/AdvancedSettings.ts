@@ -91,7 +91,7 @@ export class AdvancedSettingsModal extends Modal {
 		new Setting(this.advancedSettingsDiv)
 			.setName("Transcribe via 3rd party")
 			.setDesc(
-				"Enable transcription of voice messages and audio files using a 3rd party service.\n Audio chunking requires FFmpeg to be installed."
+				"Enable transcription of voice messages and audio files using a 3rd party service"
 			)
 			.addToggle((toggle) => {
 				toggle.setValue(this.plugin.settings.transcription.enabled);
@@ -100,7 +100,7 @@ export class AdvancedSettingsModal extends Modal {
 					await this.plugin.saveSettings();
 				});
 			});
-
+		
 		new Setting(this.advancedSettingsDiv)
 			.setName("Reply with transcription")
 			.setDesc(
@@ -155,20 +155,6 @@ export class AdvancedSettingsModal extends Modal {
 					.setValue(this.plugin.settings.transcription.template)
 					.onChange(async (value: string) => {
 						this.plugin.settings.transcription.template = value;
-						await this.plugin.saveSettings();
-					});
-			});
-		new Setting(this.advancedSettingsDiv)
-			.setName("Chunk duration")
-			.setDesc(
-				"The duration of the chunks to transcribe. If 0, the whole file will be transcribed. The default is 300 seconds (5 minutes).\nNote: Audio chunking requires FFmpeg to be installed on your system."
-			)
-			.addText((text) => {
-				text
-					.setPlaceholder("e.g. 300")
-					.setValue((this.plugin.settings.transcription.chunkDuration ?? 300).toString())
-					.onChange(async (value: string) => {
-						this.plugin.settings.transcription.chunkDuration = parseInt(value);
 						await this.plugin.saveSettings();
 					});
 			});
