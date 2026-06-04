@@ -27,7 +27,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	cfg, err := config.Load(*configPath)
+	cfgPath := *configPath
+	if cfgPath == "" {
+		cfgPath = os.Getenv("OTS_CONFIG_PATH")
+	}
+
+	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 		os.Exit(1)

@@ -15,5 +15,6 @@ COPY --from=builder /bin/obsidian-telegram-sync /usr/local/bin/
 WORKDIR /app
 VOLUME ["/app/vault"]
 
+ENV OTS_CONFIG_PATH="/app/vault/config.yaml"
+
 ENTRYPOINT ["obsidian-telegram-sync"]
-CMD ["-config", "/app/vault/config.yaml"]
