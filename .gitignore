@@ -1,19 +1,36 @@
-# vscode
-.vscode
+# If you prefer the allow list template instead of the deny list, see community template:
+# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
+#
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-# npm
-node_modules
+# Test binary, built with `go test -c`
+*.test
 
-# Don't include the compiled main.js file in the repo.
-# They should be uploaded to GitHub releases instead.
-main.js
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
 
-# Exclude sourcemaps
-*.map
+# Dependency directories (remove the comment below to include it)
+# vendor/
 
-# obsidian
-data.json
+# Go workspace file
+go.work
+go.work.sum
 
-# Exclude macOS Finder (System Explorer) View States
+# env file
+.env
+config.yaml
+vault/
+
+# Editor/IDE
+# .idea/
+# .vscode/
+
 .DS_Store
-.devcontainer/devcontainer.json

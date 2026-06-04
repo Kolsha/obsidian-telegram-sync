@@ -1,0 +1,20 @@
+bot_token: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+
+allowed_chats:
+  - "your_username"
+  # - "-1001234567890"  # group/channel chat ID
+
+delete_messages: false
+# reaction: "👍"  # emoji reaction on processed messages; per-rule override available
+vault_path: "/path/to/your/obsidian/vault"
+
+distribution_rules:
+  - filter: "{{all}}"
+    note_path: "Telegram/{{content:30}} - {{messageTime:20060102150405000}}.md"
+    file_path: "Telegram/{{file:type}}s/{{file:name}} - {{messageTime:20060102150405000}}.{{file:extension}}"
+    template_file: ""
+    heading: ""
+    # delimiter: "\n\n***\n\n"  # default; customize per rule
+    reversed_order: false
+
+log_level: "info"

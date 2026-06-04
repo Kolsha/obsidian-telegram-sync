@@ -1,58 +1,98 @@
-name: Release Obsidian plugin
+name: Release
 
 on:
-    pull_request_target:
-        types:
-            - closed
-        branches:
-            - main
+    push:
+        tags:
+            - "v*"
 
 permissions:
     contents: write
-    pull-requests: write
 
 jobs:
-    release:
-        if: ${{ github.event.pull_request.merged == true && github.head_ref == 'develop' && github.event.pull_request.author_association == 'OWNER' }}
+    test:
         runs-on: ubuntu-latest
         steps:
-            - name: Print github
-              run: echo '${{ toJson(github) }}'
-
             - name: Checkout repository
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
-            - name: Set up Node.js
-              uses: actions/setup-node@v3
+            - name: Set up Go
+              uses: actions/setup-go@v5
               with:
-                  node-version: "18.x"
+                  go-version-file: go.mod
 
-            - name: Build plugin main.js
-              id: build_plugin
-              run: |
-                  git config core.autocrlf false
-                  git config core.eol lf
-                  npm ci
-                  npm run build
+            - name: Run tests
+              run: go test ./... -v -race
 
-                  TAG_NAME=$(node -p "require('./package.json').version")
-                  echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+    release:
+        needs: test
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                include:
+                    - goos: linux
+                      goarch: amd64
+                    - goos: linux
+                      goarch: arm64
+                    - goos: darwin
+                      goarch: amd64
+                    - goos: darwin
+                      goarch: arm64
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-            - name: Create release
-              uses: softprops/action-gh-release@v1
+            - name: Set up Go
+              uses: actions/setup-go@v5
               with:
-                  files: |
-                      main.js
-                      manifest.json
-                      styles.css
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  tag_name: ${{ env.TAG_NAME }}
-                  prerelease: false
-                  draft: false
+                  go-version-file: go.mod
 
-            - name: Create and merge pull request from main to develop
-              run: |
-                  gh pr create -B develop -H main --title 'Merge main into develop' --body 'Merge main into develop'
-                  gh pr merge main --merge --auto --body 'Merge main into develop'
+            - name: Build binary
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GOOS: ${{ matrix.goos }}
+                  GOARCH: ${{ matrix.goarch }}
+                  CGO_ENABLED: "0"
+              run: |
+                  VERSION=${GITHUB_REF_NAME#v}
+                  BINARY_NAME=obsidian-telegram-sync-${{ matrix.goos }}-${{ matrix.goarch }}
+                  go build -ldflags "-s -w -X main.version=${VERSION}" \
+                    -o ${BINARY_NAME} ./cmd/obsidian-telegram-sync/
+
+            - name: Upload release artifact
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: obsidian-telegram-sync-${{ matrix.goos }}-${{ matrix.goarch }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+    docker:
+        needs: test
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract version from tag
+              id: version
+              run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  push: true
+                  platforms: linux/amd64,linux/arm64
+                  tags: |
+                      ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
+                      ghcr.io/${{ github.repository }}:latest

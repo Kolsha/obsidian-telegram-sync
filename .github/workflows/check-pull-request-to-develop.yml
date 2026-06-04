@@ -4,31 +4,37 @@ on:
     pull_request:
         types:
             - opened
+            - synchronize
         branches:
             - develop
 
 jobs:
-    check-pr:
+    test:
         runs-on: ubuntu-latest
         steps:
-            - name: Print github
-              run: echo '${{ toJson(github) }}'
-
             - name: Checkout repository
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
-            - name: Set up Node.js
-              uses: actions/setup-node@v3
+            - name: Set up Go
+              uses: actions/setup-go@v5
               with:
-                  node-version: "18.x"
+                  go-version-file: go.mod
 
-            - name: Install dependencies
-              run: npm ci
+            - name: Run tests
+              run: go test ./... -v -race
 
-            - name: Run linter
-              run: npm run lint
-              continue-on-error: true
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-            - name: Report lint errors
-              if: ${{ failure() }}
-              run: echo "There are linting errors. Please use 'npm run lint-fix' to address them."
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version-file: go.mod
+
+            - name: Run golangci-lint
+              uses: golangci/golangci-lint-action@v6
+              with:
+                  version: latest
