@@ -76,6 +76,14 @@ distribution_rules:
     file_path: "Inbox/files/{{file:name}}.{{file:extension}}"
 ```
 
+`file_link_template` controls how a saved file is referenced in the note. Default: `![{{file:name}}.{{file:extension}}]({{file:path}})` (embedded — Obsidian renders images inline and audio/voice as a player). Use `[...]` instead of `![...]` for a plain link:
+
+```yaml
+  - filter: "{{all}}"
+    file_path: "Inbox/files/{{file:name}}.{{file:extension}}"
+    file_link_template: "[{{file:name}}.{{file:extension}}]({{file:path}})"
+```
+
 ### Filter Syntax
 
 | Filter | Description |
@@ -108,8 +116,10 @@ Operations: `=` (equals), `!=` (not equals), `~` (contains), `!~` (not contains)
 | `{{files}}` | Embedded file links |
 | `{{hashtag:[N]}}` | Nth hashtag from message |
 | `{{file:type}}` | File type (photo, video, etc.) |
-| `{{file:name}}` | Original file name |
+| `{{file:name}}` | Original file name (falls back to file type) |
 | `{{file:extension}}` | File extension |
+| `{{file:uniqueId}}` | Telegram file_unique_id |
+| `{{file:path}}` | Vault-relative path of the saved file (file_link_template only) |
 
 ## Systemd Service
 

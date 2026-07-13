@@ -182,7 +182,8 @@ func TestRenderFilePath(t *testing.T) {
 	msg := testMsg()
 	ctx := testCtx(msg)
 
-	path := RenderFilePath(ctx, "Files/{{file:type}}s/{{file:name}}.{{file:extension}}", "photo", "sunset", "jpg")
+	vars := FileVars{Type: "photo", Name: "sunset", Extension: "jpg", UniqueID: "u1"}
+	path := RenderFilePath(ctx, "Files/{{file:type}}s/{{file:name}}.{{file:extension}}", vars)
 	assert.Equal(t, "Files/photos/sunset.jpg", path)
 }
 
@@ -190,10 +191,37 @@ func TestRenderFilePath_TrailingSlash(t *testing.T) {
 	msg := testMsg()
 	ctx := testCtx(msg)
 
-	path := RenderFilePath(ctx, "Files/", "photo", "sunset", "jpg")
+	path := RenderFilePath(ctx, "Files/", FileVars{Type: "photo", Name: "sunset", Extension: "jpg"})
 	assert.Contains(t, path, "Files/")
 	assert.Contains(t, path, "sunset")
 	assert.Contains(t, path, ".jpg")
+}
+
+func TestRenderFilePath_UniqueID(t *testing.T) {
+	msg := testMsg()
+	ctx := testCtx(msg)
+
+	vars := FileVars{Type: "voice", Name: "voice", Extension: "ogg", UniqueID: "AgAD_Z0"}
+	path := RenderFilePath(ctx, "Files/{{file:name}}_{{file:uniqueId}}.{{file:extension}}", vars)
+	assert.Equal(t, "Files/voice_AgAD_Z0.ogg", path)
+}
+
+func TestRenderFileLink(t *testing.T) {
+	vars := FileVars{
+		Type:      "voice",
+		Name:      "voice",
+		Extension: "ogg",
+		UniqueID:  "AgAD_Z0",
+		Path:      "journal/voices/voice_20260711215141000.ogg",
+	}
+	link := RenderFileLink("![{{file:name}}.{{file:extension}}]({{file:path}})", vars)
+	assert.Equal(t, "![voice.ogg](journal/voices/voice_20260711215141000.ogg)", link)
+}
+
+func TestRenderFileLink_PlainLink(t *testing.T) {
+	vars := FileVars{Type: "document", Name: "report", Extension: "pdf", Path: "files/report.pdf"}
+	link := RenderFileLink("[{{file:name}}.{{file:extension}}]({{file:path}})", vars)
+	assert.Equal(t, "[report.pdf](files/report.pdf)", link)
 }
 
 func TestTemplateVars_User(t *testing.T) {

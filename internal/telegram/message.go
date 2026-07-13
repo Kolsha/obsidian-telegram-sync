@@ -81,15 +81,26 @@ func GetFileInfo(msg *models.Message) *FileInfo {
 	return nil
 }
 
-// FileExtension returns the file extension from the file name or mime type.
-func (fi *FileInfo) FileExtension() string {
+// FileExtension resolves the file extension in priority order: original file
+// name, Telegram remote file path (from GetFile), MIME type, per-type default.
+func (fi *FileInfo) FileExtension(remotePath string) string {
 	if fi.FileName != "" {
-		ext := path.Ext(fi.FileName)
-		if ext != "" {
-			return strings.TrimPrefix(ext, ".")
+		if ext := strings.TrimPrefix(path.Ext(fi.FileName), "."); ext != "" {
+			return ext
 		}
 	}
-	return mimeToExt(fi.MimeType)
+	if remotePath != "" {
+		if ext := strings.TrimPrefix(path.Ext(remotePath), "."); ext != "" {
+			return ext
+		}
+	}
+	if ext, ok := mimeExtensions[fi.MimeType]; ok {
+		return ext
+	}
+	if ext, ok := typeDefaultExtensions[fi.Type]; ok {
+		return ext
+	}
+	return "file"
 }
 
 // BaseName returns the file name without extension.
@@ -98,27 +109,28 @@ func (fi *FileInfo) BaseName() string {
 		ext := path.Ext(fi.FileName)
 		return strings.TrimSuffix(fi.FileName, ext)
 	}
-	return fi.Type + "_" + fi.UniqueID
+	return fi.Type
 }
 
-func mimeToExt(mime string) string {
-	exts := map[string]string{
-		"image/jpeg":      "jpg",
-		"image/png":       "png",
-		"image/gif":       "gif",
-		"image/webp":      "webp",
-		"video/mp4":       "mp4",
-		"video/mpeg":      "mpeg",
-		"audio/mpeg":      "mp3",
-		"audio/ogg":       "ogg",
-		"audio/mp4":       "m4a",
-		"application/pdf": "pdf",
-		"application/zip": "zip",
-	}
-	if ext, ok := exts[mime]; ok {
-		return ext
-	}
-	return "file"
+var mimeExtensions = map[string]string{
+	"image/jpeg":      "jpg",
+	"image/png":       "png",
+	"image/gif":       "gif",
+	"image/webp":      "webp",
+	"video/mp4":       "mp4",
+	"video/mpeg":      "mpeg",
+	"audio/mpeg":      "mp3",
+	"audio/ogg":       "ogg",
+	"audio/mp4":       "m4a",
+	"application/pdf": "pdf",
+	"application/zip": "zip",
+}
+
+// Bot API omits mime_type for these types; extensions are fixed by Telegram.
+var typeDefaultExtensions = map[string]string{
+	"photo":      "jpg",
+	"voice":      "ogg",
+	"video_note": "mp4",
 }
 
 // IsAllowedChat checks if the message sender is in the allowed chats list.

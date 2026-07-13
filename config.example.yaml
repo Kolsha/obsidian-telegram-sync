@@ -12,6 +12,7 @@ distribution_rules:
   - filter: "{{all}}"
     note_path: "Telegram/{{content:30}} - {{messageTime:20060102150405000}}.md"
     file_path: "Telegram/{{file:type}}s/{{file:name}} - {{messageTime:20060102150405000}}.{{file:extension}}"
+    # file_link_template: "![{{file:name}}.{{file:extension}}]({{file:path}})"  # default; how the saved file is referenced in the note
     template_file: ""
     heading: ""
     # delimiter: "\n\n***\n\n"  # default; customize per rule

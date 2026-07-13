@@ -401,8 +401,28 @@ func RenderNotePath(ctx *MessageContext, pathTemplate string) string {
 	return SanitizeForPath(result)
 }
 
+// FileVars holds file attributes available to file path and file link templates.
+type FileVars struct {
+	Type      string
+	Name      string
+	Extension string
+	UniqueID  string
+	// Path is the vault-relative path of the saved file. Empty during path
+	// rendering; set before link rendering.
+	Path string
+}
+
+func replaceFileVars(s string, vars FileVars) string {
+	s = strings.ReplaceAll(s, "{{file:type}}", vars.Type)
+	s = strings.ReplaceAll(s, "{{file:name}}", vars.Name)
+	s = strings.ReplaceAll(s, "{{file:extension}}", vars.Extension)
+	s = strings.ReplaceAll(s, "{{file:uniqueId}}", vars.UniqueID)
+	s = strings.ReplaceAll(s, "{{file:path}}", vars.Path)
+	return s
+}
+
 // RenderFilePath applies template variables to a file path template.
-func RenderFilePath(ctx *MessageContext, pathTemplate, fileType, fileName, fileExt string) string {
+func RenderFilePath(ctx *MessageContext, pathTemplate string, vars FileVars) string {
 	if pathTemplate == "" {
 		return ""
 	}
@@ -412,9 +432,7 @@ func RenderFilePath(ctx *MessageContext, pathTemplate, fileType, fileName, fileE
 	}
 
 	result = renderBasicVars(ctx, result, ctx.Message.Caption, ctx.Message.Caption, true)
-	result = strings.ReplaceAll(result, "{{file:type}}", fileType)
-	result = strings.ReplaceAll(result, "{{file:name}}", fileName)
-	result = strings.ReplaceAll(result, "{{file:extension}}", fileExt)
+	result = replaceFileVars(result, vars)
 
 	lastSlash := strings.LastIndex(result, "/")
 	afterSlash := result
@@ -422,13 +440,18 @@ func RenderFilePath(ctx *MessageContext, pathTemplate, fileType, fileName, fileE
 		afterSlash = result[lastSlash+1:]
 	}
 	if !strings.Contains(afterSlash, ".") {
-		result += "." + fileExt
+		result += "." + vars.Extension
 	}
 	if strings.HasSuffix(result, ".") {
-		result += fileExt
+		result += vars.Extension
 	}
 
 	return SanitizeForPath(result)
+}
+
+// RenderFileLink renders the markdown link for a saved file using a link template.
+func RenderFileLink(linkTemplate string, vars FileVars) string {
+	return replaceFileVars(linkTemplate, vars)
 }
 
 func renderBasicVars(ctx *MessageContext, template, messageText, messageContent string, isPath bool) string {

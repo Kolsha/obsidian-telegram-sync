@@ -10,15 +10,18 @@ import (
 
 const DefaultDelimiter = "\n\n***\n\n"
 
+const DefaultFileLinkTemplate = "![{{file:name}}.{{file:extension}}]({{file:path}})"
+
 type DistributionRule struct {
-	Filter        string `mapstructure:"filter" yaml:"filter"`
-	NotePath      string `mapstructure:"note_path" yaml:"note_path"`
-	FilePath      string `mapstructure:"file_path" yaml:"file_path"`
-	TemplateFile  string `mapstructure:"template_file" yaml:"template_file"`
-	Heading       string `mapstructure:"heading" yaml:"heading"`
-	Delimiter     string `mapstructure:"delimiter" yaml:"delimiter"`
-	Reaction      string `mapstructure:"reaction" yaml:"reaction"`
-	ReversedOrder bool   `mapstructure:"reversed_order" yaml:"reversed_order"`
+	Filter           string `mapstructure:"filter" yaml:"filter"`
+	NotePath         string `mapstructure:"note_path" yaml:"note_path"`
+	FilePath         string `mapstructure:"file_path" yaml:"file_path"`
+	FileLinkTemplate string `mapstructure:"file_link_template" yaml:"file_link_template"`
+	TemplateFile     string `mapstructure:"template_file" yaml:"template_file"`
+	Heading          string `mapstructure:"heading" yaml:"heading"`
+	Delimiter        string `mapstructure:"delimiter" yaml:"delimiter"`
+	Reaction         string `mapstructure:"reaction" yaml:"reaction"`
+	ReversedOrder    bool   `mapstructure:"reversed_order" yaml:"reversed_order"`
 }
 
 type Config struct {
@@ -41,10 +44,11 @@ func (c *Config) EffectiveReaction(rule *DistributionRule) string {
 
 func DefaultDistributionRule() DistributionRule {
 	return DistributionRule{
-		Filter:    "{{all}}",
-		NotePath:  "Telegram/{{content:30}} - {{messageTime:20060102150405000}}.md",
-		FilePath:  "Telegram/{{file:type}}s/{{file:name}} - {{messageTime:20060102150405000}}.{{file:extension}}",
-		Delimiter: DefaultDelimiter,
+		Filter:           "{{all}}",
+		NotePath:         "Telegram/{{content:30}} - {{messageTime:20060102150405000}}.md",
+		FilePath:         "Telegram/{{file:type}}s/{{file:name}} - {{messageTime:20060102150405000}}.{{file:extension}}",
+		FileLinkTemplate: DefaultFileLinkTemplate,
+		Delimiter:        DefaultDelimiter,
 	}
 }
 
@@ -94,6 +98,9 @@ func Load(path string) (*Config, error) {
 	for i := range cfg.DistributionRules {
 		if cfg.DistributionRules[i].Delimiter == "" {
 			cfg.DistributionRules[i].Delimiter = DefaultDelimiter
+		}
+		if cfg.DistributionRules[i].FileLinkTemplate == "" {
+			cfg.DistributionRules[i].FileLinkTemplate = DefaultFileLinkTemplate
 		}
 	}
 

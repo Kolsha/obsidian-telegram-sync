@@ -35,7 +35,7 @@ func TestGetFileInfo_Document(t *testing.T) {
 	require.NotNil(t, fi)
 	assert.Equal(t, "document", fi.Type)
 	assert.Equal(t, "report.pdf", fi.FileName)
-	assert.Equal(t, "pdf", fi.FileExtension())
+	assert.Equal(t, "pdf", fi.FileExtension(""))
 	assert.Equal(t, "report", fi.BaseName())
 }
 
@@ -51,7 +51,7 @@ func TestGetFileInfo_Voice(t *testing.T) {
 	fi := GetFileInfo(msg)
 	require.NotNil(t, fi)
 	assert.Equal(t, "voice", fi.Type)
-	assert.Equal(t, "ogg", fi.FileExtension())
+	assert.Equal(t, "ogg", fi.FileExtension(""))
 }
 
 func TestGetFileInfo_NoFile(t *testing.T) {
@@ -61,17 +61,42 @@ func TestGetFileInfo_NoFile(t *testing.T) {
 
 func TestFileExtension_FromMime(t *testing.T) {
 	fi := &FileInfo{Type: "photo", MimeType: "image/jpeg"}
-	assert.Equal(t, "jpg", fi.FileExtension())
+	assert.Equal(t, "jpg", fi.FileExtension(""))
 }
 
 func TestFileExtension_UnknownMime(t *testing.T) {
 	fi := &FileInfo{Type: "document", MimeType: "application/octet-stream"}
-	assert.Equal(t, "file", fi.FileExtension())
+	assert.Equal(t, "file", fi.FileExtension(""))
+}
+
+func TestFileExtension_FromRemotePath(t *testing.T) {
+	fi := &FileInfo{Type: "photo", UniqueID: "abc123"}
+	assert.Equal(t, "jpg", fi.FileExtension("photos/file_9.jpg"))
+}
+
+func TestFileExtension_FileNameOverRemotePath(t *testing.T) {
+	fi := &FileInfo{Type: "document", FileName: "notes.txt"}
+	assert.Equal(t, "txt", fi.FileExtension("documents/file_1.bin"))
 }
 
 func TestBaseName_NoFileName(t *testing.T) {
 	fi := &FileInfo{Type: "photo", UniqueID: "abc123"}
-	assert.Equal(t, "photo_abc123", fi.BaseName())
+	assert.Equal(t, "photo", fi.BaseName())
+}
+
+func TestFileExtension_PhotoWithoutMime(t *testing.T) {
+	fi := &FileInfo{Type: "photo", UniqueID: "abc123"}
+	assert.Equal(t, "jpg", fi.FileExtension(""))
+}
+
+func TestFileExtension_VoiceWithoutMime(t *testing.T) {
+	fi := &FileInfo{Type: "voice", UniqueID: "abc123"}
+	assert.Equal(t, "ogg", fi.FileExtension(""))
+}
+
+func TestFileExtension_VideoNoteWithoutMime(t *testing.T) {
+	fi := &FileInfo{Type: "video_note", UniqueID: "abc123"}
+	assert.Equal(t, "mp4", fi.FileExtension(""))
 }
 
 func TestIsAllowedChat_Username(t *testing.T) {

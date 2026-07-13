@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-telegram/bot"
@@ -156,10 +155,19 @@ func (b *Bot) handleText(_ context.Context, msg *models.Message, rule *config.Di
 }
 
 func (b *Bot) handleFile(ctx context.Context, tgBot *bot.Bot, msg *models.Message, rule *config.DistributionRule, msgCtx *markdown.MessageContext, fileInfo *FileInfo) error {
-	fileExt := fileInfo.FileExtension()
-	fileName := fileInfo.BaseName()
+	file, err := tgBot.GetFile(ctx, &bot.GetFileParams{FileID: fileInfo.FileID})
+	if err != nil {
+		return fmt.Errorf("getting file info: %w", err)
+	}
 
-	filePath := markdown.RenderFilePath(msgCtx, rule.FilePath, fileInfo.Type, fileName, fileExt)
+	fileVars := markdown.FileVars{
+		Type:      fileInfo.Type,
+		Name:      fileInfo.BaseName(),
+		Extension: fileInfo.FileExtension(file.FilePath),
+		UniqueID:  fileInfo.UniqueID,
+	}
+
+	filePath := markdown.RenderFilePath(msgCtx, rule.FilePath, fileVars)
 	if filePath == "" {
 		return nil
 	}
@@ -170,29 +178,26 @@ func (b *Bot) handleFile(ctx context.Context, tgBot *bot.Bot, msg *models.Messag
 		return fmt.Errorf("creating file directory: %w", err)
 	}
 
-	fullFilePath = storage.GetUniqueFilePath(fullFilePath, time.Now(), fileExt, nil)
+	fullFilePath = storage.GetUniqueFilePath(fullFilePath, time.Now(), fileVars.Extension, nil)
 
-	if err := storage.DownloadFile(ctx, tgBot, fileInfo.FileID, fullFilePath); err != nil {
+	if err := storage.DownloadFile(ctx, tgBot, file, fullFilePath); err != nil {
 		return fmt.Errorf("downloading file: %w", err)
 	}
 
+	relPath, err := filepath.Rel(b.cfg.VaultPath, fullFilePath)
+	if err != nil {
+		return fmt.Errorf("resolving saved file path: %w", err)
+	}
+	fileVars.Path = filepath.ToSlash(relPath)
+
 	b.logger.Info("file saved",
-		zap.String("path", filePath),
+		zap.String("path", fileVars.Path),
 		zap.String("type", fileInfo.Type),
 		zap.Int("message_id", msg.ID),
 	)
 
 	if msg.Caption != "" || rule.TemplateFile != "" {
-		relPath := filePath
-		ext := filepath.Ext(relPath)
-		isImage := strings.HasPrefix(fileInfo.MimeType, "image/") || fileInfo.Type == "photo"
-		var link string
-		if isImage {
-			link = "![" + fileName + ext + "](" + relPath + ")"
-		} else {
-			link = "[" + fileName + ext + "](" + relPath + ")"
-		}
-		msgCtx.FilesLinks = []string{link}
+		msgCtx.FilesLinks = []string{markdown.RenderFileLink(rule.FileLinkTemplate, fileVars)}
 
 		notePath := markdown.RenderNotePath(msgCtx, rule.NotePath)
 		if notePath != "" {

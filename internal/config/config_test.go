@@ -57,6 +57,25 @@ distribution_rules:
 	assert.Equal(t, "## Messages", rule.Heading)
 	assert.Equal(t, "\n---\n", rule.Delimiter)
 	assert.True(t, rule.ReversedOrder)
+	assert.Equal(t, DefaultFileLinkTemplate, rule.FileLinkTemplate)
+}
+
+func TestLoadCustomFileLinkTemplate(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+
+	yaml := `
+bot_token: "123:ABC"
+distribution_rules:
+  - filter: "{{all}}"
+    file_link_template: "[{{file:name}}.{{file:extension}}]({{file:path}})"
+`
+	require.NoError(t, os.WriteFile(cfgPath, []byte(yaml), 0644))
+
+	cfg, err := Load(cfgPath)
+	require.NoError(t, err)
+	require.Len(t, cfg.DistributionRules, 1)
+	assert.Equal(t, "[{{file:name}}.{{file:extension}}]({{file:path}})", cfg.DistributionRules[0].FileLinkTemplate)
 }
 
 func TestLoadMissingToken(t *testing.T) {
